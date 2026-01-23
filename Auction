@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Auction Price Helper</title>
+    <style>
+        :root {
+            --primary: #28a745;
+            --primary-hover: #218838;
+            --danger: #dc3545;
+            --light: #f8f9fa;
+            --gray: #6c757d;
+            --fee-width: 220px; /* 固定收费标准栏宽度 */
+        }
+        body {
+            font-family: system-ui, sans-serif;
+            background: var(--light);
+            margin: 0;
+            padding: 16px;
+            color: #212529;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        h1 {
+            text-align: center;
+            margin: 0 0 20px;
+            font-size: 1.8rem;
+            color: #343a40;
+        }
+        .exchange-box {
+            background: #e9f7ef;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        label {
+            font-weight: 600;
+            margin-bottom: 6px;
+            display: block;
+        }
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+        .cart-label {
+            font-weight: 600;
+            margin: 20px 0 12px;
+            display: block;
+        }
+        .cart-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin: 12px 0;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+        .cart-item input {
+            flex: 1;
+            min-width: 0;
+        }
+        .remove-btn {
+            background: var(--danger);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            width: 36px;
+            height: 36px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .fee-info {
+            width: var(--fee-width);
+            flex-shrink: 0;
+            font-size: 0.9rem;
+            color: var(--gray);
+            padding-top: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        #add-item {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 14px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            margin: 20px 0;
+            transition: all 0.2s;
+        }
+        #add-item:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+        #add-item:active {
+            transform: translateY(1px);
+        }
+        .result {
+            background: #e9f7ff;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 24px;
+            text-align: center;
+        }
+        .result p {
+            margin: 8px 0;
+            font-size: 1.05rem;
+        }
+        .total-bill {
+            font-size: 2.2rem;
+            font-weight: bold;
+            color: var(--primary);
+            margin-top: 16px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Auction Price Helper</h1>
+
+    <div class="exchange-box">
+        <label>CNY to USD Exchange Rate</label>
+        <input type="number" id="rate" step="0.000001" value="0.143268" min="0.01"/>
+    </div>
+
+    <label class="cart-label">Shopping Cart (up to 10 items)</label>
+    <div id="cart"></div>
+
+    <button id="add-item">+ Add Item</button>
+
+    <div class="result">
+        <p>Total Items (CNY): <strong id="sumItems">0.00</strong></p>
+        <p>Total Fees (CNY): <strong id="sumFees">0.00</strong></p>
+        <p>Grand Total (CNY): <strong id="grandCNY">0.00</strong></p>
+        <div class="total-bill">Total bill (USD): <span id="totalUSD">0.00</span> $</div>
+    </div>
+</div>
+
+<script>
+const feeTier = (amt) => {
+    if (amt <= 200)   return {fee:20,   txt:"20 CNY"};
+    if (amt <= 5000)  return {fee:amt*0.1,txt:"10%"};
+    if (amt <= 20000) return {fee:amt*0.08,txt:"8%"};
+    if (amt <= 35000) return {fee:amt*0.07,txt:"7%"};
+    if (amt <= 50000) return {fee:amt*0.06,txt:"6%"};
+    return {fee:Math.min(amt*0.06,3000), txt:"capped at 3,000 CNY"};
+};
+
+function update() {
+    let sumItems = 0, sumFees = 0;
+    document.querySelectorAll('.item-price').forEach(el => {
+        const v = Number(el.value) || 0;
+        sumItems += v;
+        if (v > 0) sumFees += feeTier(v).fee;
+    });
+    const grand = sumItems + sumFees;
+    const rate = Number(document.getElementById('rate').value) || 0.14;
+    const usd = grand * rate;
+
+    document.getElementById('sumItems').textContent = sumItems.toFixed(2);
+    document.getElementById('sumFees').textContent = sumFees.toFixed(2);
+    document.getElementById('grandCNY').textContent = grand.toFixed(2);
+    document.getElementById('totalUSD').textContent = usd.toFixed(2);
+}
+
+function addRow() {
+    const count = document.querySelectorAll('.cart-item').length;
+    if (count >= 10) return alert("Max 10 items");
+
+    const div = document.createElement('div');
+    div.className = 'cart-item';
+    div.innerHTML = `
+        <input type="number" class="item-price" placeholder="Item ${count+1} (CNY)" min="0" step="0.01">
+        <button class="remove-btn">×</button>
+        <div class="fee-info">Fee Standard: -</div>
+    `;
+
+    div.querySelector('.remove-btn').onclick = () => { div.remove(); update(); };
+
+    const input = div.querySelector('.item-price');
+    const info = div.querySelector('.fee-info');
+
+    input.oninput = () => {
+        const v = Number(input.value) || 0;
+        info.textContent = v > 0 ? `Fee Standard: ${feeTier(v).txt} per item` : "Fee Standard: -";
+        update();
+    };
+
+    document.getElementById('cart').appendChild(div);
+    input.focus();
+}
+
+document.getElementById('add-item').onclick = addRow;
+document.getElementById('rate').oninput = update;
+
+// 启动
+addRow();
+</script>
+
+</body>
+</html>
