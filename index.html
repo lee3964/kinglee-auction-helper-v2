@@ -2,159 +2,463 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Auction Price Helper</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kinglee Auction Price Helper</title>
+    <meta name="application-name" content="Kinglee Auction Price Helper" />
+    <meta name="description" content="Kinglee Auction Price Helper prices auction lots in CNY, applies the per-item fee tiers, and shows the bill in USD." />
+    <meta name="theme-color" content="#1b312b" />
     <style>
+        @font-face {
+            font-family: "Familjen Grotesk";
+            font-style: normal;
+            font-weight: 400 700;
+            font-display: swap;
+            src: url("fonts/familjen-grotesk-latin.woff2") format("woff2");
+        }
+        @font-face {
+            font-family: "Fraunces";
+            font-style: normal;
+            font-weight: 100 900;
+            font-display: swap;
+            src: url("fonts/fraunces-latin.woff2") format("woff2");
+        }
+
         :root {
-            --primary: #28a745;
-            --primary-hover: #218838;
-            --danger: #dc3545;
-            --light: #f8f9fa;
-            --gray: #6c757d;
-            --fee-width: 220px; /* 固定收费标准栏宽度 */
+            --pine: #1b312b;
+            --pine-deep: #12241f;
+            --plaster: #e6dece;
+            --sheet: #f7f3ea;
+            --ink: #1c1916;
+            --muted: #5c564c;
+            --faint: #8a8174;
+            --line: #ddd3c3;
+            --brass: #8a6230;
+            --brass-deep: #68461d;
+            --oxblood: #8a3b32;
+            --oxblood-soft: #f8ece8;
+            --paper: #fffdf8;
+            --sans: "Familjen Grotesk", "Avenir Next", "Segoe UI", sans-serif;
+            --serif: "Fraunces", "Iowan Old Style", Palatino, "Palatino Linotype", Georgia, serif;
+            color-scheme: light;
         }
+
+        * { box-sizing: border-box; }
+
+        html { -webkit-text-size-adjust: 100%; }
+
         body {
-            font-family: system-ui, sans-serif;
-            background: var(--light);
             margin: 0;
-            padding: 16px;
-            color: #212529;
+            min-height: 100vh;
+            font-family: var(--sans);
+            font-weight: 400;
+            font-synthesis: none;
+            color: var(--ink);
+            background:
+                linear-gradient(var(--pine), var(--pine)) left top / 100% 7px no-repeat,
+                var(--plaster);
+            padding: 28px 16px 40px;
         }
-        .container {
-            max-width: 800px;
+
+        .wrap {
+            max-width: 740px;
             margin: 0 auto;
-            background: white;
-            padding: 24px;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
         }
+
+        .sheet {
+            background: var(--sheet);
+            border: 1px solid #d5cbb8;
+            border-radius: 22px;
+            box-shadow: 0 18px 44px rgba(48, 36, 16, 0.08);
+            padding: 28px 22px 22px;
+        }
+
+        header.mast { margin-bottom: 22px; }
+
         h1 {
-            text-align: center;
-            margin: 0 0 20px;
-            font-size: 1.8rem;
-            color: #343a40;
+            margin: 0;
+            font-family: var(--serif);
+            font-weight: 560;
+            font-optical-sizing: auto;
+            font-size: clamp(1.85rem, 4.6vw, 2.55rem);
+            line-height: 1.08;
+            letter-spacing: -0.025em;
+            color: var(--pine);
         }
-        .exchange-box {
-            background: #e9f7ef;
-            padding: 16px;
-            border-radius: 8px;
-            margin-bottom: 20px;
+
+        .lede {
+            margin: 10px 0 0;
+            max-width: 38rem;
+            color: var(--muted);
+            font-size: 1.02rem;
+            line-height: 1.45;
         }
-        label {
-            font-weight: 600;
-            margin-bottom: 6px;
-            display: block;
+
+        .rule {
+            height: 0;
+            margin: 18px 0 0;
+            border: 0;
+            border-top: 2px solid var(--pine);
+            box-shadow: 0 4px 0 var(--brass);
         }
-        input[type="number"] {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ced4da;
-            border-radius: 6px;
-            font-size: 1rem;
-        }
-        .cart-label {
-            font-weight: 600;
-            margin: 20px 0 12px;
-            display: block;
-        }
-        .cart-item {
+
+        .cart-head {
             display: flex;
-            align-items: flex-start;
+            align-items: baseline;
+            justify-content: space-between;
             gap: 12px;
-            margin: 12px 0;
-            padding: 12px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            border: 1px solid #e9ecef;
+            margin: 26px 0 12px;
         }
-        .cart-item input {
-            flex: 1;
-            min-width: 0;
-        }
-        .remove-btn {
-            background: var(--danger);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            width: 36px;
-            height: 36px;
-            font-size: 1.2rem;
-            cursor: pointer;
-            flex-shrink: 0;
-        }
-        .fee-info {
-            width: var(--fee-width);
-            flex-shrink: 0;
-            font-size: 0.9rem;
-            color: var(--gray);
-            padding-top: 8px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        #add-item {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 14px;
-            font-size: 1.1rem;
+
+        .cart-head h2 {
+            margin: 0;
+            font-family: var(--sans);
+            font-size: 1.05rem;
             font-weight: 600;
-            border-radius: 8px;
-            cursor: pointer;
-            width: 100%;
-            margin: 20px 0;
-            transition: all 0.2s;
+            letter-spacing: 0;
         }
-        #add-item:hover {
-            background: var(--primary-hover);
-            transform: translateY(-1px);
+
+        .count {
+            color: var(--faint);
+            font-variant-numeric: tabular-nums;
+            font-size: 0.92rem;
         }
-        #add-item:active {
-            transform: translateY(1px);
-        }
-        .result {
-            background: #e9f7ff;
-            padding: 20px;
+
+        #emptyCart {
+            margin: 0 0 12px;
+            padding: 14px 16px;
+            border: 1px dashed var(--line);
             border-radius: 12px;
-            margin-top: 24px;
+            color: var(--muted);
+            background: rgba(255, 253, 248, 0.55);
+        }
+
+        .cart-item {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr) auto;
+            grid-template-areas:
+                "idx price remove"
+                "fee fee fee";
+            gap: 8px 10px;
+            align-items: center;
+            margin: 0 0 10px;
+            padding: 12px;
+            background: var(--paper);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+        }
+
+        .item-label {
+            grid-area: idx;
+            width: 1.8rem;
+            font-family: var(--serif);
+            font-weight: 560;
+            font-size: 1.15rem;
+            color: var(--brass);
             text-align: center;
         }
-        .result p {
-            margin: 8px 0;
+
+        .price-field {
+            grid-area: price;
+            display: flex;
+            align-items: center;
+            min-width: 0;
+            background: var(--sheet);
+            border: 1px solid #d9d0c2;
+            border-radius: 10px;
+            padding-right: 12px;
+        }
+
+        .price-field:focus-within {
+            border-color: var(--pine);
+            box-shadow: 0 0 0 3px rgba(27, 49, 43, 0.12);
+        }
+
+        .item-price {
+            width: 100%;
+            min-width: 0;
+            border: 0;
+            background: transparent;
+            padding: 12px 8px 12px 12px;
+            font-family: var(--sans);
+            font-size: 1.05rem;
+            font-variant-numeric: tabular-nums;
+            color: var(--ink);
+        }
+
+        .item-price:focus { outline: none; }
+
+        .item-price::placeholder { color: #b3aa9c; }
+
+        .unit {
+            flex-shrink: 0;
+            color: var(--faint);
+            font-size: 0.78rem;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+        }
+
+        .fee-info {
+            grid-area: fee;
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.92rem;
+            line-height: 1.35;
+        }
+
+        .cart-item.has-fee .fee-info { color: var(--brass-deep); }
+
+        .remove-btn {
+            grid-area: remove;
+            width: 44px;
+            height: 44px;
+            border: 1px solid #e4cfc9;
+            border-radius: 10px;
+            background: var(--paper);
+            color: var(--oxblood);
+            font-size: 1.35rem;
+            line-height: 1;
+            cursor: pointer;
+        }
+
+        .remove-btn:hover,
+        .remove-btn:focus-visible {
+            background: var(--oxblood-soft);
+            border-color: #e0b2aa;
+        }
+
+        .remove-btn:focus-visible {
+            outline: 2px solid var(--oxblood);
+            outline-offset: 2px;
+        }
+
+        #add-item {
+            width: 100%;
+            margin: 4px 0 0;
+            padding: 14px 16px;
+            border: 0;
+            border-radius: 12px;
+            background: var(--pine);
+            color: #f6f1e6;
+            font-family: var(--sans);
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        #add-item:hover { background: var(--pine-deep); }
+
+        #add-item:focus-visible {
+            outline: 2px solid var(--brass);
+            outline-offset: 3px;
+        }
+
+        #add-item:disabled {
+            background: #cfc6b8;
+            color: #6f685e;
+            cursor: not-allowed;
+        }
+
+        .schedule {
+            margin-top: 14px;
+            border-top: 1px solid var(--line);
+            padding-top: 10px;
+        }
+
+        .schedule summary {
+            cursor: pointer;
+            color: var(--muted);
+            font-weight: 600;
+            font-size: 0.92rem;
+        }
+
+        .schedule summary:focus-visible {
+            outline: 2px solid var(--brass);
+            outline-offset: 3px;
+        }
+
+        .schedule ol {
+            list-style: none;
+            margin: 10px 0 0;
+            padding: 0;
+        }
+
+        .schedule li {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 7px 0;
+            border-bottom: 1px solid #eee6d8;
+            font-size: 0.92rem;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .schedule li span:last-child {
+            color: var(--brass-deep);
+            font-weight: 600;
+            text-align: right;
+        }
+
+        .ledger {
+            margin-top: 22px;
+            padding: 6px 6px 6px;
+            background: #efe8db;
+            border-radius: 18px;
+        }
+
+        .totals {
+            margin: 0;
+            padding: 12px 12px 4px;
+        }
+
+        .totals div {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 16px;
+            padding: 7px 0;
+        }
+
+        .totals dt {
+            margin: 0;
+            color: var(--muted);
+            font-weight: 500;
+        }
+
+        .totals dd {
+            margin: 0;
+            font-variant-numeric: tabular-nums;
+            font-weight: 600;
             font-size: 1.05rem;
         }
-        .total-bill {
-            font-size: 2.2rem;
-            font-weight: bold;
-            color: var(--primary);
-            margin-top: 16px;
+
+        .bill {
+            margin-top: 8px;
+            padding: 16px 16px 14px;
+            border-radius: 14px;
+            background: var(--pine);
+            color: #f4ecdc;
+        }
+
+        .bill-label {
+            margin: 0;
+            font-size: 0.78rem;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #d9c7a4;
+        }
+
+        .bill-amount {
+            margin: 4px 0 0;
+            font-family: var(--serif);
+            font-weight: 620;
+            font-optical-sizing: auto;
+            font-size: clamp(2.15rem, 8vw, 3.15rem);
+            letter-spacing: -0.03em;
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
+            color: #f3e2bc;
+        }
+
+        .bill-amount .currency {
+            margin-right: 2px;
+            font-size: 0.62em;
+            color: #e7d3a4;
+        }
+
+        .footnote {
+            margin: 14px 4px 0;
+            color: var(--faint);
+            font-size: 0.82rem;
+            line-height: 1.4;
+        }
+
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+
+        @media (min-width: 720px) {
+            body { padding: 40px 24px 56px; }
+            .sheet { padding: 36px 36px 28px; }
+            .cart-item {
+                grid-template-columns: auto minmax(180px, 1fr) minmax(180px, 1.1fr) auto;
+                grid-template-areas: "idx price fee remove";
+                gap: 12px;
+            }
+            .fee-info { padding-left: 4px; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * { transition: none !important; }
+        }
+
+        @media print {
+            body { background: white; padding: 0; }
+            .sheet { box-shadow: none; border: 0; }
+            .remove-btn, #add-item, .schedule { display: none; }
         }
     </style>
 </head>
 <body>
+    <main class="wrap">
+        <article class="sheet">
+            <header class="mast">
+                <h1>Kinglee Auction Price Helper</h1>
+                <p class="lede">Price each lot, apply the per-item fee, and read the bill in US dollars.</p>
+                <hr class="rule" />
+            </header>
 
-<div class="container">
-    <h1>Auction Price Helper</h1>
+            <div class="cart-head">
+                <h2>Shopping cart</h2>
+                <p class="count"><span id="itemCount">0</span> / 10</p>
+            </div>
+            <p id="emptyCart" hidden>No lots yet. Add an item to price the bill.</p>
+            <div id="cart"></div>
+            <button type="button" id="add-item">+ Add Item</button>
 
-    <div class="exchange-box">
-        <label>CNY to USD Exchange Rate</label>
-        <input type="number" id="rate" step="0.000001" value="0.143268" min="0.01"/>
-    </div>
+            <details class="schedule">
+                <summary>Fee schedule per item</summary>
+                <ol>
+                    <li><span>Up to 200 CNY</span><span>20 CNY</span></li>
+                    <li><span>Up to 5,000 CNY</span><span>10%</span></li>
+                    <li><span>Up to 20,000 CNY</span><span>8%</span></li>
+                    <li><span>Up to 35,000 CNY</span><span>7%</span></li>
+                    <li><span>Up to 50,000 CNY</span><span>6%</span></li>
+                    <li><span>Above 50,000 CNY</span><span>6%, capped at 3,000 CNY</span></li>
+                </ol>
+            </details>
 
-    <label class="cart-label">Shopping Cart (up to 10 items)</label>
-    <div id="cart"></div>
-
-    <button id="add-item">+ Add Item</button>
-
-    <div class="result">
-        <p>Total Items (CNY): <strong id="sumItems">0.00</strong></p>
-        <p>Total Fees (CNY): <strong id="sumFees">0.00</strong></p>
-        <p>Grand Total (CNY): <strong id="grandCNY">0.00</strong></p>
-        <div class="total-bill">Total bill (USD): <span id="totalUSD">0.00</span> $</div>
-    </div>
-</div>
+            <section class="ledger" aria-label="Bill">
+                <dl class="totals">
+                    <div>
+                        <dt>Total items (CNY)</dt>
+                        <dd id="sumItems">0.00</dd>
+                    </div>
+                    <div>
+                        <dt>Total fees (CNY)</dt>
+                        <dd id="sumFees">0.00</dd>
+                    </div>
+                    <div>
+                        <dt>Grand total (CNY)</dt>
+                        <dd id="grandCNY">0.00</dd>
+                    </div>
+                </dl>
+                <div class="bill">
+                    <p class="bill-label">Total bill (USD)</p>
+                    <p class="bill-amount"><span class="currency">$</span><span id="totalUSD">0.00</span></p>
+                </div>
+            </section>
+            <p class="footnote">Up to 10 lots. Each lot is charged on its own tier.</p>
+        </article>
+    </main>
 
 <script>
+// Desk rate. Totals multiply by this constant and never by a fetched quote.
+const FIXED_CNY_TO_USD = 0.155;
+
 const feeTier = (amt) => {
     if (amt <= 200)   return {fee:20,   txt:"20 CNY"};
     if (amt <= 5000)  return {fee:amt*0.1,txt:"10%"};
@@ -164,56 +468,86 @@ const feeTier = (amt) => {
     return {fee:Math.min(amt*0.06,3000), txt:"capped at 3,000 CNY"};
 };
 
+const moneyFmt = new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+});
+
+function money(n) {
+    return moneyFmt.format(Number.isFinite(n) ? n : 0);
+}
+
 function update() {
     let sumItems = 0, sumFees = 0;
-    document.querySelectorAll('.item-price').forEach(el => {
+    document.querySelectorAll(".item-price").forEach(el => {
         const v = Number(el.value) || 0;
         sumItems += v;
         if (v > 0) sumFees += feeTier(v).fee;
+        const row = el.closest(".cart-item");
+        const info = row.querySelector(".fee-info");
+        if (v > 0) {
+            const tier = feeTier(v);
+            info.textContent = `Fee standard: ${tier.txt} per item · ${money(tier.fee)} CNY`;
+            row.classList.add("has-fee");
+        } else {
+            info.textContent = "Fee standard: —";
+            row.classList.remove("has-fee");
+        }
     });
-    const grand = sumItems + sumFees;
-    const rate = Number(document.getElementById('rate').value) || 0.14;
-    const usd = grand * rate;
 
-    document.getElementById('sumItems').textContent = sumItems.toFixed(2);
-    document.getElementById('sumFees').textContent = sumFees.toFixed(2);
-    document.getElementById('grandCNY').textContent = grand.toFixed(2);
-    document.getElementById('totalUSD').textContent = usd.toFixed(2);
+    const grand = sumItems + sumFees;
+    const usd = grand * FIXED_CNY_TO_USD;
+
+    document.getElementById("sumItems").textContent = money(sumItems);
+    document.getElementById("sumFees").textContent = money(sumFees);
+    document.getElementById("grandCNY").textContent = money(grand);
+    document.getElementById("totalUSD").textContent = money(usd);
+
+    const rows = document.querySelectorAll(".cart-item");
+    rows.forEach((row, i) => {
+        const n = i + 1;
+        row.querySelector(".item-label").textContent = String(n);
+        row.querySelector(".item-price").setAttribute("aria-label", `Item ${n} price in CNY`);
+        row.querySelector(".remove-btn").setAttribute("aria-label", `Remove item ${n}`);
+    });
+    document.getElementById("itemCount").textContent = String(rows.length);
+    document.getElementById("emptyCart").hidden = rows.length !== 0;
+    const add = document.getElementById("add-item");
+    const full = rows.length >= 10;
+    add.disabled = full;
+    add.textContent = full ? "Cart is full (10 items)" : "+ Add Item";
 }
 
-function addRow() {
-    const count = document.querySelectorAll('.cart-item').length;
+function addRow(shouldFocus) {
+    const count = document.querySelectorAll(".cart-item").length;
     if (count >= 10) return alert("Max 10 items");
 
-    const div = document.createElement('div');
-    div.className = 'cart-item';
+    const div = document.createElement("div");
+    div.className = "cart-item";
     div.innerHTML = `
-        <input type="number" class="item-price" placeholder="Item ${count+1} (CNY)" min="0" step="0.01">
-        <button class="remove-btn">×</button>
-        <div class="fee-info">Fee Standard: -</div>
+        <span class="item-label"></span>
+        <div class="price-field">
+            <input type="number" class="item-price" placeholder="0.00" min="0" step="0.01" inputmode="decimal" autocomplete="off">
+            <span class="unit">CNY</span>
+        </div>
+        <p class="fee-info">Fee standard: —</p>
+        <button type="button" class="remove-btn" aria-label="Remove item"><span aria-hidden="true">×</span></button>
     `;
 
-    div.querySelector('.remove-btn').onclick = () => { div.remove(); update(); };
+    div.querySelector(".remove-btn").onclick = () => { div.remove(); update(); };
 
-    const input = div.querySelector('.item-price');
-    const info = div.querySelector('.fee-info');
+    const input = div.querySelector(".item-price");
+    input.addEventListener("input", update);
+    input.addEventListener("wheel", () => input.blur(), { passive: true });
 
-    input.oninput = () => {
-        const v = Number(input.value) || 0;
-        info.textContent = v > 0 ? `Fee Standard: ${feeTier(v).txt} per item` : "Fee Standard: -";
-        update();
-    };
-
-    document.getElementById('cart').appendChild(div);
-    input.focus();
+    document.getElementById("cart").appendChild(div);
+    update();
+    if (shouldFocus) input.focus();
 }
 
-document.getElementById('add-item').onclick = addRow;
-document.getElementById('rate').oninput = update;
+document.getElementById("add-item").onclick = () => addRow(true);
 
-// 启动
-addRow();
+addRow(false);
 </script>
-
 </body>
 </html>
